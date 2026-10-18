@@ -87,6 +87,29 @@ h2 .act { margin-left: auto; letter-spacing: 0; font-size: 13px; color: var(--bl
 .now-line span { font-size: 11px; color: var(--pink); font-weight: 800; text-shadow: 0 0 6px #fff, 0 0 3px #fff; text-align: right; padding-right: 4px; }
 .now-line i { grid-column: 2 / 4; height: 2px; background: var(--pink); border-radius: 2px; position: relative; }
 .now-line i::before { content: ""; position: absolute; left: 4px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--pink); }
+/* 日历式时间轴 */
+.cal { position: relative; border-radius: 16px; overflow: hidden; background: rgba(255,255,255,0.55); -webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3); box-shadow: var(--shadow); }
+.cal-hour { position: absolute; left: 0; right: 0; border-top: 1px solid var(--line); }
+.cal-hour span { position: absolute; left: 6px; top: 2px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cal-area { position: absolute; left: 48px; right: 6px; top: 0; bottom: 0; }
+.cal-ev { position: absolute; border-radius: 10px; padding: 3px 28px 3px 8px; overflow: hidden; font-size: 12px; line-height: 1.3;
+  background: rgba(var(--c), 0.16); border-left: 3px solid rgb(var(--c)); touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: box-shadow .15s; }
+.cal-ev.done { background: rgba(42,157,143,0.16); border-left-color: #2a9d8f; }
+.cal-ev.done .ev-name { text-decoration: line-through; opacity: .7; }
+.cal-ev.skip { opacity: .45; }
+.cal-ev.cur { box-shadow: 0 0 0 2px var(--pink); }
+.cal-ev.drag { z-index: 6; box-shadow: 0 10px 24px rgba(28,39,66,0.3); opacity: .95; background: rgba(var(--c), 0.3); }
+.ev-name { font-weight: 700; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ev-time { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.ev-note { font-size: 11px; background: rgba(195,154,85,0.2); border-radius: 6px; padding: 1px 5px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ev-check { position: absolute; right: 4px; top: 4px; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid rgba(28,39,66,0.25); background: rgba(255,255,255,0.7); font-size: 12px; font-weight: 800; padding: 0; line-height: 1; }
+.cal-ev.done .ev-check { background: #2a9d8f; border-color: #2a9d8f; color: #fff; }
+.cal-ev.skip .ev-check { background: var(--line); }
+.ev-resize { position: absolute; left: 0; right: 0; bottom: 0; height: 14px; touch-action: none; cursor: ns-resize; }
+.ev-resize::after { content: ""; position: absolute; left: 50%; bottom: 3px; width: 26px; height: 4px; margin-left: -13px; border-radius: 4px; background: rgba(var(--c), 0.55); }
+.cal-now { position: absolute; left: 42px; right: 0; height: 2px; background: var(--pink); z-index: 5; pointer-events: none; }
+.cal-now::before { content: ""; position: absolute; left: -4px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--pink); }
+.cal-now span { position: absolute; left: -42px; top: -8px; font-size: 10px; font-weight: 800; color: var(--pink); background: #fff; border-radius: 6px; padding: 0 3px; }
 .row-btns { display: flex; gap: 8px; margin-top: 10px; }
 .ghost { flex: 1; border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 9px; font-size: 13px; font-weight: 600; }
 
@@ -181,9 +204,9 @@ details { margin-bottom: 12px; } summary { font-size: 13px; color: var(--blue); 
   </div>
 
   <h2>🕒 时间轴 <button class="act" id="addBlock">＋ 加一块</button></h2>
-  <div class="timeline" id="timeline"></div>
+  <div class="cal" id="timeline"></div>
   <div class="row-btns"><button class="ghost" id="resetDay">↺ 这一天恢复成模板</button></div>
-  <p class="hint">右边圆圈：完成 ✓ → 跳过 – → 还原。点块本身：写笔记、改时间。</p>
+  <p class="hint">像苹果日历一样用：<b>长按拖动</b>挪时间，<b>拖底边</b>拉长 / 缩短，<b>点空白</b>加一块，<b>点块</b>记实际做了什么。右上小圆圈：完成 ✓ → 跳过 – → 还原。</p>
 
   <h2>🎯 终点</h2>
   <div class="goals">
@@ -245,7 +268,7 @@ details { margin-bottom: 12px; } summary { font-size: 13px; color: var(--blue); 
     <div class="seg" id="bsStatus">
       <button data-s="done">✓ 完成</button><button data-s="skip">– 跳过</button><button data-s="">还没做</button>
     </div>
-    <label class="field">这一块的笔记（只记在这一天）<textarea id="bsNote" placeholder="做了什么、卡在哪、灵感…"></textarea></label>
+    <label class="field">实际做了什么 / 笔记（只记在这一天）<textarea id="bsNote" placeholder="实际做了什么、卡在哪、灵感…"></textarea></label>
     <details id="bsEditWrap">
       <summary>✏️ 改时间 / 改名</summary>
       <label class="field">名称<input id="bName"></label>
@@ -358,8 +381,23 @@ details { margin-bottom: 12px; } summary { font-size: 13px; color: var(--blue); 
     try { state = raw ? JSON.parse(raw) : null; } catch (e) { state = null; }
     if (!state) state = {};
     state.templates = state.templates || JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
-    ["weekday", "sat", "sun"].forEach(function (k) { state.templates[k].forEach(function (b) { if (b.note && !b.desc) { b.desc = b.note; delete b.note; } }); });
+    ["weekday", "sat", "sun"].forEach(function (k) { state.templates[k].forEach(function (b) { if (b.note && !b.desc) { b.desc = b.note; delete b.note; } if (!b.id) b.id = uid(); }); });
     state.days = state.days || {};
+    // 每个块有固定 id，挪时间不会丢勾和笔记；旧版用「开始时间|名称」当 key 的数据换成 id
+    Object.keys(state.days).forEach(function (k) {
+      var d = state.days[k];
+      if (d.blocks) d.blocks.forEach(function (b) { if (!b.id) b.id = uid(); });
+      var list = d.blocks || state.templates[tplKey(k)];
+      ["status", "notes"].forEach(function (f) {
+        if (!d[f]) return;
+        Object.keys(d[f]).forEach(function (key) {
+          if (key.indexOf("|") < 0) return;
+          var hit = list.find(function (b) { return b.start + "|" + b.name === key; });
+          if (hit) d[f][hit.id] = d[f][key];
+          delete d[f][key];
+        });
+      });
+    });
     state.goals = state.goals || { likes: 0, makeup: 0, job: "投递中", jobNote: "", w1: "", w2: "" };
     state.notes = state.notes || [];
     // 旧版「今天的一句话」搬进笔记
@@ -403,7 +441,9 @@ details { margin-bottom: 12px; } summary { font-size: 13px; color: var(--blue); 
     var list = d && d.blocks ? d.blocks : state.templates[tplKey(s)];
     return list.slice().sort(function (a, b) { return mins(a.start) - mins(b.start); });
   }
-  function bkey(b) { return b.start + "|" + b.name; }
+  function bkey(b) { return b.id; }
+  function uid() { return "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function hm(m) { return pad(Math.floor(m / 60)) + ":" + pad(m % 60); }
 
   var $ = function (id) { return document.getElementById(id); };
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -464,44 +504,172 @@ details { margin-bottom: 12px; } summary { font-size: 13px; color: var(--blue); 
     $("weekBar").style.width = Math.min(100, st.lit / 33 * 100) + "%";
   }
 
+  // ---------- 日历式时间轴 ----------
+  var CAL_START = 6 * 60, CAL_END = 24 * 60, PX = 1; // 1 分钟 = 1px，一小时 60px
+  var SNAP = 15;
+  function catColor(name) {
+    if (/🎬|🤖/.test(name)) return "224,93,142";
+    if (/💼/.test(name)) return "42,93,184";
+    if (/🏋️|🎾|🏃|💃/.test(name)) return "42,157,143";
+    if (/🧴|📓|🌅|😴/.test(name)) return "184,146,90";
+    if (/📖|📱|🗓️/.test(name)) return "120,110,190";
+    return "93,104,130";
+  }
+  function y(m) { return (m - CAL_START) * PX; }
+  function snap(m) { return Math.round(m / SNAP) * SNAP; }
+  function clampDay(m) { return Math.max(CAL_START, Math.min(CAL_END, m)); }
+
+  // 重叠的块并排放，像日历一样
+  function layout(list) {
+    var placed = [], clusters = [], cur = null, maxEnd = -1;
+    list.forEach(function (b) {
+      var s = mins(b.start), e = mins(b.end);
+      if (!cur || s >= maxEnd) { cur = []; clusters.push(cur); maxEnd = e; } else maxEnd = Math.max(maxEnd, e);
+      cur.push(b);
+    });
+    clusters.forEach(function (cl) {
+      var colEnds = [];
+      cl.forEach(function (b) {
+        var s = mins(b.start), c = colEnds.findIndex(function (end) { return end <= s; });
+        if (c < 0) { c = colEnds.length; colEnds.push(0); }
+        colEnds[c] = mins(b.end);
+        placed.push({ b: b, col: c, cluster: cl });
+      });
+      cl.cols = colEnds.length;
+    });
+    return placed;
+  }
+
   function renderTimeline() {
     var box = $("timeline"); box.innerHTML = "";
+    box.style.height = y(CAL_END) + "px";
+    for (var h = CAL_START / 60; h < CAL_END / 60; h++) {
+      var line = el("div", "cal-hour"); line.style.top = y(h * 60) + "px";
+      line.appendChild(el("span", null, pad(h) + ":00")); box.appendChild(line);
+    }
+    var area = el("div", "cal-area"); box.appendChild(area);
     var dd = day(current);
     var now = new Date(), nowM = now.getHours() * 60 + now.getMinutes();
-    var isToday = current === iso(now), nowPlaced = !isToday;
-    blocksFor(current).forEach(function (b) {
-      if (!nowPlaced && nowM < mins(b.start)) { box.appendChild(nowLine(now)); nowPlaced = true; }
+    var isToday = current === iso(now);
+    layout(blocksFor(current)).forEach(function (p) {
+      var b = p.b, s = mins(b.start), e = mins(b.end);
       var st = dd.status[bkey(b)] || "";
-      var cur = isToday && nowM >= mins(b.start) && nowM < mins(b.end);
-      if (cur) nowPlaced = true;
-      var item = el("div", "tl-item" + (st ? " " + st : "") + (cur ? " cur" : ""));
-      item.appendChild(el("div", "tl-time", b.start));
-      var rail = el("div", "tl-rail"); rail.appendChild(el("div", "tl-dot")); item.appendChild(rail);
-      var card = el("div", "tl-card");
-      var body = el("div", "tl-body");
-      body.appendChild(el("div", "tl-name", b.name));
-      var sub = b.start + "–" + b.end + (b.desc ? " · " + b.desc : "");
-      if (cur) sub = "正在进行 · 还剩 " + (mins(b.end) - nowM) + " 分钟 · " + sub;
-      body.appendChild(el("div", "tl-sub", sub));
+      var cur = isToday && nowM >= s && nowM < e;
+      var ev = el("div", "cal-ev" + (st ? " " + st : "") + (cur ? " cur" : ""));
+      ev.style.setProperty("--c", catColor(b.name));
+      ev.style.top = (y(s) + 1) + "px";
+      ev.style.height = Math.max(20, (e - s) * PX - 2) + "px";
+      var w = 100 / p.cluster.cols;
+      ev.style.left = "calc(" + (p.col * w) + "% + 1px)";
+      ev.style.width = "calc(" + w + "% - 3px)";
+      ev.appendChild(el("div", "ev-name", b.name));
+      var timeEl = el("div", "ev-time", b.start + "–" + b.end + (cur ? " · 还剩 " + (e - nowM) + " 分钟" : ""));
+      if (e - s >= 40) ev.appendChild(timeEl);
       var note = dd.notes[bkey(b)];
-      if (note) body.appendChild(el("div", "tl-note", note));
-      body.addEventListener("click", function () { openBlock(b); });
-      var c = el("button", "check", st === "done" ? "✓" : st === "skip" ? "–" : "");
-      c.setAttribute("aria-label", "打勾");
-      c.addEventListener("click", function () {
+      if (note && e - s >= 55) ev.appendChild(el("div", "ev-note", note));
+      var chk = el("button", "ev-check", st === "done" ? "✓" : st === "skip" ? "–" : "");
+      chk.setAttribute("aria-label", "打勾");
+      chk.addEventListener("pointerdown", function (ev2) { ev2.stopPropagation(); });
+      chk.addEventListener("click", function (ev2) {
+        ev2.stopPropagation();
         var next = st === "" ? "done" : st === "done" ? "skip" : "";
         if (next) dd.status[bkey(b)] = next; else delete dd.status[bkey(b)];
-        save(); renderTimeline();
-        if (next === "done") toast("✓ " + b.name);
+        save(); renderTimeline(); if (next === "done") toast("✓ " + b.name);
       });
-      card.appendChild(body); card.appendChild(c); item.appendChild(card);
-      box.appendChild(item);
+      ev.appendChild(chk);
+      var rz = el("div", "ev-resize"); ev.appendChild(rz);
+      bindMove(ev, b, timeEl);
+      bindResize(rz, ev, b, timeEl);
+      area.appendChild(ev);
     });
-    if (!nowPlaced) box.appendChild(nowLine(now));
+    if (isToday && nowM >= CAL_START && nowM <= CAL_END) {
+      var nl = el("div", "cal-now"); nl.style.top = y(nowM) + "px";
+      nl.appendChild(el("span", null, hm(nowM))); box.appendChild(nl);
+    }
+    bindEmptyTap(area);
     $("resetDay").style.display = state.days[current] && state.days[current].blocks ? "" : "none";
   }
-  function nowLine(now) {
-    var l = el("div", "now-line"); l.appendChild(el("span", null, pad(now.getHours()) + ":" + pad(now.getMinutes()))); l.appendChild(el("i")); return l;
+
+  // 拖动的时候不让页面跟着滚（iOS 需要非 passive 的 touchmove）
+  var dragging = false;
+  document.addEventListener("touchmove", function (e) { if (dragging) e.preventDefault(); }, { passive: false });
+
+  function commitTime(b, s, e) {
+    var dd = day(current);
+    var list = (dd.blocks || state.templates[tplKey(current)]).map(function (x) { return Object.assign({}, x); });
+    var hit = list.find(function (x) { return x.id === b.id; });
+    if (!hit) return;
+    hit.start = hm(s); hit.end = hm(e);
+    dd.blocks = list; save(); renderTimeline();
+    toast(hit.start + "–" + hit.end + "（只改这一天）");
+  }
+
+  function bindMove(ev, b, timeEl) {
+    var timer = null, sy = 0, moved = false, active = false, s0 = mins(b.start), dur = mins(b.end) - mins(b.start), ns = s0, downAt = 0;
+    ev.addEventListener("pointerdown", function (e) {
+      if (e.button > 0) return;
+      sy = e.clientY; moved = false; active = false; downAt = Date.now();
+      try { ev.setPointerCapture(e.pointerId); } catch (x) {}
+      timer = setTimeout(function () {
+        active = true; dragging = true; ev.classList.add("drag");
+        if (navigator.vibrate) navigator.vibrate(10);
+      }, 350);
+    });
+    ev.addEventListener("pointermove", function (e) {
+      var dy = e.clientY - sy;
+      if (!active) { if (Math.abs(dy) > 8) { moved = true; clearTimeout(timer); } return; }
+      ns = clampDay(snap(s0 + dy / PX));
+      if (ns + dur > CAL_END) ns = CAL_END - dur;
+      ev.style.top = (y(ns) + 1) + "px";
+      timeEl.textContent = hm(ns) + "–" + hm(ns + dur);
+    });
+    function end() {
+      clearTimeout(timer);
+      if (active) {
+        active = false; dragging = false; ev.classList.remove("drag");
+        if (ns !== s0) commitTime(b, ns, ns + dur); else renderTimeline();
+      } else if (!moved && Date.now() - downAt < 350) {
+        openBlock(b);
+      }
+    }
+    ev.addEventListener("pointerup", end);
+    ev.addEventListener("pointercancel", function () { clearTimeout(timer); active = false; dragging = false; ev.classList.remove("drag"); });
+    ev.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  }
+
+  function bindResize(rz, ev, b, timeEl) {
+    var sy = 0, e0 = 0, ne = 0, s0 = 0, on = false;
+    rz.addEventListener("pointerdown", function (e) {
+      e.stopPropagation();
+      on = true; dragging = true; sy = e.clientY; s0 = mins(b.start); e0 = mins(b.end); ne = e0;
+      try { rz.setPointerCapture(e.pointerId); } catch (x) {}
+      ev.classList.add("drag");
+    });
+    rz.addEventListener("pointermove", function (e) {
+      if (!on) return;
+      ne = clampDay(Math.max(s0 + SNAP, snap(e0 + (e.clientY - sy) / PX)));
+      ev.style.height = Math.max(20, (ne - s0) * PX - 2) + "px";
+      timeEl.textContent = hm(s0) + "–" + hm(ne);
+      if (!timeEl.parentNode) ev.insertBefore(timeEl, ev.children[1]);
+    });
+    rz.addEventListener("pointerup", function (e) {
+      e.stopPropagation();
+      if (!on) return; on = false; dragging = false; ev.classList.remove("drag");
+      if (ne !== e0) commitTime(b, s0, ne); else renderTimeline();
+    });
+    rz.addEventListener("click", function (e) { e.stopPropagation(); });
+  }
+
+  // 点空白处：在那个时间加一块
+  function bindEmptyTap(area) {
+    var sy = 0, at = 0;
+    area.addEventListener("pointerdown", function (e) { if (e.target === area) { sy = e.clientY; at = Date.now(); } else at = 0; });
+    area.addEventListener("pointerup", function (e) {
+      if (e.target !== area || !at || Math.abs(e.clientY - sy) > 8 || Date.now() - at > 400) return;
+      var rect = area.getBoundingClientRect();
+      var m = clampDay(Math.floor((CAL_START + (e.clientY - rect.top) / PX) / 30) * 30);
+      openBlock(null, hm(m), hm(Math.min(CAL_END, m + 60)));
+    });
   }
 
   function renderGoals() {
@@ -530,7 +698,7 @@ details { margin-bottom: 12px; } summary { font-size: 13px; color: var(--blue); 
 
   // ---------- 时间块弹窗 ----------
   var editing = null, editStatus = "";
-  function openBlock(b) {
+  function openBlock(b, presetStart, presetEnd) {
     editing = b;
     var dd = day(current);
     $("bsTitle").textContent = b ? b.name : "加一个时间块";
@@ -539,8 +707,8 @@ details { margin-bottom: 12px; } summary { font-size: 13px; color: var(--blue); 
     paintSeg();
     $("bsNote").value = b ? (dd.notes[bkey(b)] || "") : "";
     $("bName").value = b ? b.name : "";
-    $("bStart").value = b ? b.start : "09:00";
-    $("bEnd").value = b ? b.end : "10:00";
+    $("bStart").value = b ? b.start : (presetStart || "09:00");
+    $("bEnd").value = b ? b.end : (presetEnd || "10:00");
     $("bDesc").value = b ? (b.desc || "") : "";
     $("bTemplate").checked = false;
     $("bTemplateName").textContent = TPL_NAME[tplKey(current)];
@@ -552,17 +720,17 @@ details { margin-bottom: 12px; } summary { font-size: 13px; color: var(--blue); 
   function closeBlock() { $("blockSheet").hidden = true; editing = null; }
   function saveBlock(remove) {
     var dd = day(current);
-    var nb = { start: $("bStart").value, end: $("bEnd").value, name: $("bName").value.trim(), desc: $("bDesc").value.trim() };
+    var nb = { id: editing ? editing.id : uid(), start: $("bStart").value, end: $("bEnd").value, name: $("bName").value.trim(), desc: $("bDesc").value.trim() };
     if (!remove && (!nb.name || !nb.start || !nb.end || mins(nb.end) <= mins(nb.start))) { toast("名称和时间要填对：结束要晚于开始"); return; }
     var changed = !editing || remove || nb.name !== editing.name || nb.start !== editing.start || nb.end !== editing.end || nb.desc !== (editing.desc || "");
     var oldKey = editing ? bkey(editing) : null, newKey = remove ? null : bkey(nb);
     if (changed) {
       var toTemplate = $("bTemplate").checked;
       var list = (dd.blocks || state.templates[tplKey(current)]).map(function (x) { return Object.assign({}, x); });
-      var idx = editing ? list.findIndex(function (x) { return x.start === editing.start && x.name === editing.name; }) : -1;
+      var idx = editing ? list.findIndex(function (x) { return x.id === editing.id; }) : -1;
       if (remove) { if (idx >= 0) list.splice(idx, 1); } else if (idx >= 0) list[idx] = nb; else list.push(nb);
       if (toTemplate) { state.templates[tplKey(current)] = list; delete dd.blocks; } else dd.blocks = list;
-      if (oldKey && oldKey !== newKey) { delete dd.status[oldKey]; delete dd.notes[oldKey]; }
+      if (remove && oldKey) { delete dd.status[oldKey]; delete dd.notes[oldKey]; }
       toast(remove ? "删掉了" : toTemplate ? "已改模板：以后每个" + TPL_NAME[tplKey(current)] + "都这样" : "只改了这一天");
     }
     if (newKey) {
