@@ -561,7 +561,7 @@ details.edit { margin-bottom: 12px; } details.edit summary { font-size: 13px; co
     });
   }
   function ghGetFile(path) { return gh("GET", path).then(function (r) { return r.status === 404 ? null : r.ok ? r.json() : Promise.reject(r); }); }
-  var syncStatus = { s: "off", t: "" }, pushTimer = null, busy = false;
+  var syncStatus = { s: "off", t: "" }, pushTimer = null, busy = false, conflicts = 0;
   function setSync(s, t) { syncStatus = { s: s, t: t || "" }; paintSync(); }
   function paintSync() {
     var map = { off: "", ok: "☁️✓", busy: "☁️…", err: "☁️⚠️", pending: "☁️↑" };
@@ -615,7 +615,13 @@ details.edit { margin-bottom: 12px; } details.edit summary { font-size: 13px; co
     var body = { message: "同步 " + stamp(), content: b64enc(new TextEncoder().encode(JSON.stringify(state))) };
     if (c.sha) body.sha = c.sha;
     return gh("PUT", "data.json", body).then(function (r) {
-      if (r.status === 409 || r.status === 422) { busy = false; return pull(); }
+      if (r.status === 409 || r.status === 422) {
+        // 版本冲突：重新拉一次再合并；连续冲突就停下来报错，不无限重试
+        busy = false; conflicts++;
+        if (conflicts > 2) { conflicts = 0; return Promise.reject({ status: r.status }); }
+        return pull();
+      }
+      conflicts = 0;
       if (r.status === 404 || r.status === 403) return Promise.reject({ status: "write" });
       if (!r.ok) return Promise.reject(r);
       return r.json().then(function (j) { c.sha = j.content.sha; setSyncCfg(c); busy = false; setSync("ok", nowHM()); return uploadPhotos(); });
