@@ -574,6 +574,7 @@ details.edit { margin-bottom: 12px; } details.edit summary { font-size: 13px; co
     if (r.status === 401) return "令牌不对或者过期了";
     if (r.status === 403) return "令牌没有这个仓库的读写权限";
     if (r.status === 404) return "找不到这个仓库，检查一下名字和令牌权限";
+    if (r.status === "write") return "令牌写不进这个仓库：去 GitHub 编辑令牌，Repository access 要选中这个仓库，Contents 要选 Read and write";
     return "GitHub 返回 " + r.status;
   }
   function nowHM() { var d = new Date(); return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
@@ -615,6 +616,7 @@ details.edit { margin-bottom: 12px; } details.edit summary { font-size: 13px; co
     if (c.sha) body.sha = c.sha;
     return gh("PUT", "data.json", body).then(function (r) {
       if (r.status === 409 || r.status === 422) { busy = false; return pull(); }
+      if (r.status === 404 || r.status === 403) return Promise.reject({ status: "write" });
       if (!r.ok) return Promise.reject(r);
       return r.json().then(function (j) { c.sha = j.content.sha; setSyncCfg(c); busy = false; setSync("ok", nowHM()); return uploadPhotos(); });
     }).catch(function (r) { busy = false; setSync(navigator.onLine === false ? "pending" : "err", errText(r)); });
