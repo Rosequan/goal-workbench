@@ -337,7 +337,7 @@ details.edit { margin-bottom: 12px; } details.edit summary { font-size: 13px; co
     <h3>⚙️ 更多</h3>
     <div class="sync-box">
       <div class="sync-state" id="syncState">☁️ 还没开同步</div>
-      <label class="field">私有仓库（用户名/仓库名）<input id="sRepo" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+      <label class="field">私有仓库（用户名/仓库名，填 …-data 那个私有的，不是网页那个）<input id="sRepo" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
       <label class="field">GitHub 令牌（只存在这台手机）<input id="sToken" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_…"></label>
       <div class="acts"><button id="sOff">断开</button><button class="primary" id="sOn">保存并同步</button></div>
     </div>
@@ -574,6 +574,7 @@ details.edit { margin-bottom: 12px; } details.edit summary { font-size: 13px; co
     if (r.status === 401) return "令牌不对或者过期了";
     if (r.status === 403) return "令牌没有这个仓库的读写权限";
     if (r.status === 404) return "找不到这个仓库，检查一下名字和令牌权限";
+    if (r.status === "public") return "这个仓库是公开的！为了保护隐私不会同步。仓库要填 Rosequan/goal-workbench-data";
     if (r.status === "write") return "令牌写不进这个仓库：去 GitHub 编辑令牌，Repository access 要选中这个仓库，Contents 要选 Read and write";
     return "GitHub 返回 " + r.status;
   }
@@ -592,10 +593,21 @@ details.edit { margin-bottom: 12px; } details.edit summary { font-size: 13px; co
     base.photos = Object.keys(photos).map(function (k) { return photos[k]; }).filter(function (p) { return !gone[p.id]; });
     return base;
   }
+  // 安全检查：只往「私有」仓库里写，公开仓库一律拒绝（防止把数据写进公开的网页仓库）
+  function checkPrivate() {
+    var c = syncCfg();
+    if (c.privateOk === c.repo) return Promise.resolve();
+    return fetch("https://api.github.com/repos/" + c.repo, { cache: "no-store", headers: { "Authorization": "Bearer " + c.token, "Accept": "application/vnd.github+json" } })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r); })
+      .then(function (j) {
+        if (!j.private) return Promise.reject({ status: "public" });
+        var c2 = syncCfg(); c2.privateOk = c2.repo; setSyncCfg(c2);
+      });
+  }
   function pull() {
     if (!syncOn() || busy) return Promise.resolve();
     busy = true; setSync("busy");
-    return ghGetFile("data.json").then(function (f) {
+    return checkPrivate().then(function () { return ghGetFile("data.json"); }).then(function (f) {
       var c = syncCfg();
       if (!f) { c.sha = null; setSyncCfg(c); busy = false; return push(); }
       c.sha = f.sha; setSyncCfg(c);
@@ -610,6 +622,7 @@ details.edit { margin-bottom: 12px; } details.edit summary { font-size: 13px; co
   }
   function push() {
     if (!syncOn() || busy) return Promise.resolve();
+    if (syncCfg().privateOk !== syncCfg().repo) return pull();
     busy = true; setSync("busy");
     var c = syncCfg();
     var body = { message: "同步 " + stamp(), content: b64enc(new TextEncoder().encode(JSON.stringify(state))) };
